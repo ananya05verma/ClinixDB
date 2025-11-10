@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doctor Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+    }
+
+    .navbar {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .navbar h2 {
+      font-size: 24px;
+    }
+
+    .logoutBtn {
+      background: white;
+      color: #11998e;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      background: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .tab.active {
+      background: #11998e;
+      color: white;
+    }
+
+    .tab:hover {
+      transform: translateY(-2px);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .card {
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    .card h3 {
+      color: #11998e;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+    }
+
+    .info-item {
+      padding: 10px;
+      background: #f9f9f9;
+      border-radius: 5px;
+    }
+
+    .info-label {
+      font-weight: 600;
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .info-value {
+      color: #333;
+      font-size: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: #11998e;
+      color: white;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+    }
+
+    tr:hover {
+      background: #f9f9f9;
+    }
+
+    .status-badge {
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-scheduled {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .status-completed {
+      background: #e8f5e9;
+      color: #388e3c;
+    }
+
+    .status-cancelled {
+      background: #ffebee;
+      color: #d32f2f;
+    }
+
+    .status-no-show {
+      background: #fff3e0;
+      color: #f57c00;
+    }
+
+    .action-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 2px;
+    }
+
+    .btn-complete {
+      background: #4caf50;
+      color: white;
+    }
+
+    .btn-cancel {
+      background: #f44336;
+      color: white;
+    }
+
+    .btn-add-treatment {
+      background: #007bff;
+      color: white;
+    }
+
+    .btn-complete:hover {
+      background: #45a049;
+    }
+
+    .btn-cancel:hover {
+      background: #da190b;
+    }
+
+    .btn-add-treatment:hover {
+      background: #0069d9;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 36px;
+      font-weight: 700;
+      color: #11998e;
+      margin: 10px 0;
+    }
+
+    .stat-label {
+      color: #666;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* Modal Styling */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 90%;
+    }
+
+    .modal-content h3 {
+      color: #11998e;
+      margin-bottom: 15px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background: #11998e;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <h2>🩺 Doctor Portal</h2>
+    <div>
+      <span id="userName" style="margin-right: 20px;"></span>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('profile')">Profile</button>
+      <button class="tab" onclick="showTab('appointments')">My Appointments</button>
+    </div>
+
+    <!-- Profile Tab -->
+    <div id="profile" class="tab-content active">
+      <div class="card">
+        <h3>Professional Information</h3>
+        <div id="profileData" class="info-grid"></div>
+      </div>
+    </div>
+
+    <!-- Appointments Tab -->
+    <div id="appointments" class="tab-content">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Appointments</div>
+          <div class="stat-number" id="totalAppts">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Scheduled</div>
+          <div class="stat-number" id="scheduledAppts">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Completed</div>
+          <div class="stat-number" id="completedAppts">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Cancelled</div>
+          <div class="stat-number" id="cancelledAppts">0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Patient Appointments</h3>
+        <div style="overflow-x: auto;">
+          <table id="appointmentsTable">
+            <thead>
+              <tr>
+                <th>Appointment ID</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Patient Name</th>
+                <th>Contact</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Treatment Modal -->
+  <div id="treatmentModal" class="modal">
+    <div class="modal-content">
+      <h3>Add Treatment</h3>
+      <form id="treatmentForm">
+        <div class="form-group">
+          <label for="treatmentType">Treatment Type</label>
+          <input type="text" id="treatmentType" required>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" rows="3" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="cost">Cost (₹)</label>
+          <input type="number" id="cost" required>
+        </div>
+
+        <button type="submit" class="btn-primary">Save Treatment</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ====== Logout Function ======
+    document.getElementById("logoutBtn").addEventListener("click", function () {
+      localStorage.clear();
+      window.location.href = "/login";
+    });
+
+    const API_URL = 'http://localhost:5000/api';
+    const token = localStorage.getItem('token');
+    const userName = localStorage.getItem('name');
+    if (!token) window.location.href = 'login.html';
+    document.getElementById('userName').textContent = userName;
+
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+
+    let selectedAppointment = null;
+
+    // ====== Tab Navigation ======
+    function showTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(tabName).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // ====== Load Profile ======
+    async function loadProfile() {
+      const response = await fetch(`${API_URL}/doctor/profile`, { headers });
+      const data = await response.json();
+      document.getElementById('profileData').innerHTML = `
+        <div class="info-item"><div class="info-label">Doctor ID</div><div class="info-value">${data.doctor_id}</div></div>
+        <div class="info-item"><div class="info-label">Full Name</div><div class="info-value">Dr. ${data.first_name} ${data.last_name}</div></div>
+        <div class="info-item"><div class="info-label">Specialization</div><div class="info-value">${data.specialization}</div></div>
+        <div class="info-item"><div class="info-label">Experience</div><div class="info-value">${data.years_experience} years</div></div>
+        <div class="info-item"><div class="info-label">Contact</div><div class="info-value">${data.phone_number}</div></div>
+        <div class="info-item"><div class="info-label">Email</div><div class="info-value">${data.email}</div></div>
+        <div class="info-item"><div class="info-label">Branch</div><div class="info-value">${data.hospital_branch}</div></div>`;
+    }
+
+    // ====== Load Appointments ======
+    async function loadAppointments() {
+      const res = await fetch(`${API_URL}/doctor/appointments`, { headers });
+      const data = await res.json();
+
+      const total = data.length;
+      const scheduled = data.filter(a => a.status === 'Scheduled').length;
+      const completed = data.filter(a => a.status === 'Completed').length;
+      const cancelled = data.filter(a => a.status === 'Cancelled').length;
+
+      document.getElementById('totalAppts').textContent = total;
+      document.getElementById('scheduledAppts').textContent = scheduled;
+      document.getElementById('completedAppts').textContent = completed;
+      document.getElementById('cancelledAppts').textContent = cancelled;
+
+      const tbody = document.querySelector('#appointmentsTable tbody');
+      tbody.innerHTML = data.map(a => `
+        <tr>
+          <td>${a.appointment_id}</td>
+          <td>${a.appointment_date}</td>
+          <td>${a.appointment_time}</td>
+          <td>${a.patient_name}</td>
+          <td>${a.contact_number}</td>
+          <td>${a.reason_for_visit}</td>
+          <td><span class="status-badge status-${a.status.toLowerCase().replace('-', '')}">${a.status}</span></td>
+          <td>
+            ${a.status === 'Scheduled'
+              ? `<button class="action-btn btn-add-treatment" onclick="openTreatmentForm('${a.appointment_id}')">Add Treatment</button>
+                 <button class="action-btn btn-cancel" onclick="updateStatus('${a.appointment_id}', 'Cancelled')">Cancel</button>`
+              : '-'}
+          </td>
+        </tr>`).join('');
+    }
+
+    // ====== Update Appointment Status ======
+    async function updateStatus(id, status) {
+      if (!confirm(`Mark this appointment as ${status}?`)) return;
+      const res = await fetch(`${API_URL}/doctor/update-appointment-status`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ appointment_id: id, status })
+      });
+      if (res.ok) loadAppointments();
+      else alert('Failed to update status');
+    }
+
+    // ====== Treatment Modal ======
+    function openTreatmentForm(id) {
+      selectedAppointment = id;
+      document.getElementById('treatmentModal').style.display = 'flex';
+    }
+
+    document.getElementById('treatmentForm').addEventListener('submit', async e => {
+      e.preventDefault();
+
+      const data = {
+        appointment_id: selectedAppointment,
+        treatment_type: document.getElementById('treatmentType').value,
+        description: document.getElementById('description').value,
+        cost: document.getElementById('cost').value
+      };
+
+      const res = await fetch(`${API_URL}/doctor/add-treatment`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data)
+      });
+
+      const json = await res.json();
+
+      if (res.ok) {
+        alert('✅ Treatment added & billing created!');
+        document.getElementById('treatmentModal').style.display = 'none';
+        e.target.reset();
+        loadAppointments();
+      } else {
+        alert(json.message || 'Error adding treatment');
+      }
+    });
+
+    // Close modal when clicking outside
+    window.onclick = e => {
+      if (e.target == document.getElementById('treatmentModal'))
+        document.getElementById('treatmentModal').style.display = 'none';
+    };
+
+    // ====== Initial Load ======
+    loadProfile();
+    loadAppointments();
+  </script>
+</body>
+</html>

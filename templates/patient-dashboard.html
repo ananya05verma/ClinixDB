@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar h2 {
+            font-size: 24px;
+        }
+        
+        .logoutBtn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .tab:hover {
+            transform: translateY(-2px);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .info-item {
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            color: #333;
+            font-size: 16px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tr:hover {
+            background: #f9f9f9;
+        }
+        
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-scheduled {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .status-completed {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+        
+        .status-cancelled {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        
+        .status-no-show {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .status-paid {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+        
+        .status-pending {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .status-failed {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .success-message {
+            background: #e8f5e9;
+            color: #388e3c;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h2>🏥 Patient Portal</h2>
+        <div>
+            <span id="userName" style="margin-right: 20px;"></span>
+            <button id="logoutBtn">Logout</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('profile')">Profile</button>
+            <button class="tab" onclick="showTab('appointments')">Appointments</button>
+            <button class="tab" onclick="showTab('treatments')">Treatments</button>
+            <button class="tab" onclick="showTab('billings')">Billings</button>
+            <button class="tab" onclick="showTab('book')">Book Appointment</button>
+        </div>
+        
+        <!-- Profile Tab -->
+        <div id="profile" class="tab-content active">
+            <div class="card">
+                <h3>Personal Information</h3>
+                <div id="profileData" class="info-grid"></div>
+            </div>
+        </div>
+        
+        <!-- Appointments Tab -->
+        <div id="appointments" class="tab-content">
+            <div class="card">
+                <h3>My Appointments</h3>
+                <div style="overflow-x: auto;">
+                    <table id="appointmentsTable">
+                        <thead>
+                            <tr>
+                                <th>Appointment ID</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Doctor</th>
+                                <th>Specialization</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Treatments Tab -->
+        <div id="treatments" class="tab-content">
+            <div class="card">
+                <h3>Treatment History</h3>
+                <div style="overflow-x: auto;">
+                    <table id="treatmentsTable">
+                        <thead>
+                            <tr>
+                                <th>Treatment ID</th>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                                <th>Reason for Visit</th>
+                                <th>Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Billings Tab -->
+        <div id="billings" class="tab-content">
+            <div class="card">
+                <h3>Billing Information</h3>
+                <div style="overflow-x: auto;">
+                    <table id="billingsTable">
+                        <thead>
+                            <tr>
+                                <th>Bill ID</th>
+                                <th>Date</th>
+                                <th>Treatment Type</th>
+                                <th>Amount</th>
+                                <th>Payment Method</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Book Appointment Tab -->
+        <div id="book" class="tab-content">
+            <div class="card">
+                <h3>Book New Appointment</h3>
+                <div class="success-message" id="successMessage">Appointment booked successfully!</div>
+                <form id="bookingForm">
+                    <div class="form-group">
+                        <label for="doctorSelect">Select Doctor</label>
+                        <select id="doctorSelect" required>
+                            <option value="">Choose a doctor...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="appointmentDate">Appointment Date</label>
+                        <input type="date" id="appointmentDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="appointmentTime">Appointment Time</label>
+                        <input type="time" id="appointmentTime" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reason">Reason for Visit</label>
+                        <select id="reason" required>
+                            <option value="">Select reason...</option>
+                            <option value="Checkup">Checkup</option>
+                            <option value="Consultation">Consultation</option>
+                            <option value="Follow-up">Follow-up</option>
+                            <option value="Emergency">Emergency</option>
+                            <option value="Therapy">Therapy</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary">Book Appointment</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById("logoutBtn").addEventListener("click", function() {
+            // Clear any stored token
+            localStorage.removeItem("token");
+            localStorage.removeItem("role");
+            // Redirect to login page
+            window.location.href = "/login";
+        });
+    </script>
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        const token = localStorage.getItem('token');
+        const userName = localStorage.getItem('name');
+        
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+        
+        document.getElementById('userName').textContent = userName;
+        
+        const headers = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+        
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        async function loadProfile() {
+            try {
+                const response = await fetch(`${API_URL}/patient/profile`, { headers });
+                const data = await response.json();
+                
+                const profileHTML = `
+                    <div class="info-item">
+                        <div class="info-label">Patient ID</div>
+                        <div class="info-value">${data.patient_id}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Full Name</div>
+                        <div class="info-value">${data.first_name} ${data.last_name}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Gender</div>
+                        <div class="info-value">${data.gender}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Date of Birth</div>
+                        <div class="info-value">${data.date_of_birth}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Contact Number</div>
+                        <div class="info-value">${data.contact_number}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Email</div>
+                        <div class="info-value">${data.email}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Address</div>
+                        <div class="info-value">${data.address}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Registration Date</div>
+                        <div class="info-value">${data.registration_date}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Insurance Provider</div>
+                        <div class="info-value">${data.insurance_provider}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Insurance Number</div>
+                        <div class="info-value">${data.insurance_number}</div>
+                    </div>
+                `;
+                
+                document.getElementById('profileData').innerHTML = profileHTML;
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+        
+        async function loadAppointments() {
+            try {
+                const response = await fetch(`${API_URL}/patient/appointments`, { headers });
+                const data = await response.json();
+                
+                const tbody = document.querySelector('#appointmentsTable tbody');
+                tbody.innerHTML = data.map(apt => `
+                    <tr>
+                        <td>${apt.appointment_id}</td>
+                        <td>${apt.appointment_date}</td>
+                        <td>${apt.appointment_time}</td>
+                        <td>${apt.doctor_name}</td>
+                        <td>${apt.specialization}</td>
+                        <td>${apt.reason_for_visit}</td>
+                        <td><span class="status-badge status-${apt.status.toLowerCase().replace('-', '')}">${apt.status}</span></td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading appointments:', error);
+            }
+        }
+        
+        async function loadTreatments() {
+            try {
+                const response = await fetch(`${API_URL}/patient/treatments`, { headers });
+                const data = await response.json();
+                
+                const tbody = document.querySelector('#treatmentsTable tbody');
+                tbody.innerHTML = data.map(t => `
+                    <tr>
+                        <td>${t.treatment_id}</td>
+                        <td>${t.treatment_date}</td>
+                        <td>${t.treatment_type}</td>
+                        <td>${t.description}</td>
+                        <td>${t.reason_for_visit}</td>
+                        <td>₹${t.cost.toFixed(2)}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading treatments:', error);
+            }
+        }
+        
+        async function loadBillings() {
+            try {
+                const response = await fetch(`${API_URL}/patient/billings`, { headers });
+                const data = await response.json();
+                
+                const tbody = document.querySelector('#billingsTable tbody');
+                tbody.innerHTML = data.map(b => `
+                    <tr>
+                        <td>${b.bill_id}</td>
+                        <td>${b.bill_date}</td>
+                        <td>${b.treatment_type}</td>
+                        <td>₹${b.amount.toFixed(2)}</td>
+                        <td>${b.payment_method}</td>
+                        <td><span class="status-badge status-${b.payment_status.toLowerCase()}">${b.payment_status}</span></td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading billings:', error);
+            }
+        }
+        
+        async function loadDoctors() {
+            try {
+                const response = await fetch(`${API_URL}/doctors/available`, { headers });
+                const data = await response.json();
+                
+                const select = document.getElementById('doctorSelect');
+                data.forEach(doctor => {
+                    const option = document.createElement('option');
+                    option.value = doctor.doctor_id;
+                    option.textContent = `Dr. ${doctor.first_name} ${doctor.last_name} - ${doctor.specialization} (${doctor.hospital_branch})`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading doctors:', error);
+            }
+        }
+        
+        document.getElementById('bookingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const bookingData = {
+                doctor_id: document.getElementById('doctorSelect').value,
+                date: document.getElementById('appointmentDate').value,
+                time: document.getElementById('appointmentTime').value,
+                reason: document.getElementById('reason').value
+            };
+            
+            try {
+                const response = await fetch(`${API_URL}/patient/book-appointment`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(bookingData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('successMessage').style.display = 'block';
+                    document.getElementById('bookingForm').reset();
+                    setTimeout(() => {
+                        document.getElementById('successMessage').style.display = 'none';
+                    }, 3000);
+                    loadAppointments();
+                } else {
+                    alert('Error booking appointment: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Server error. Please try again.');
+            }
+        });
+        
+        // Set minimum date to today
+        document.getElementById('appointmentDate').min = new Date().toISOString().split('T')[0];
+        
+        // Load initial data
+        loadProfile();
+        loadAppointments();
+        loadTreatments();
+        loadBillings();
+        loadDoctors();
+    </script>
+</body>
+</html>
