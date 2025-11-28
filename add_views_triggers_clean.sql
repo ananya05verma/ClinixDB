@@ -118,19 +118,6 @@ BEGIN
 END$$
 DELIMITER ;
 
-DROP TRIGGER IF EXISTS trg_appt_completed_last_visit_au;
-DELIMITER $$
-CREATE TRIGGER trg_appt_completed_last_visit_au
-AFTER UPDATE ON Appointments
-FOR EACH ROW
-BEGIN
-  IF NEW.status IN ('Completed') AND (OLD.status IS NULL OR OLD.status <> NEW.status) THEN
-    UPDATE Patients
-    SET last_visit = NEW.appointment_date
-    WHERE patient_id = NEW.patient_id;
-  END IF;
-END$$
-DELIMITER ;
 
 DROP TRIGGER IF EXISTS trg_billing_fill_patient_ai;
 DELIMITER $$
