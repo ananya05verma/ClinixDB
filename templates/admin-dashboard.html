@@ -1,520 +1,509 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f5f5;
-        }
-        
-        .navbar {
-            background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
-            color: white;
-            padding: 15px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .navbar h2 {
-            font-size: 24px;
-        }
-        
-        .logoutBtn {
-            background: white;
-            color: #fc4a1a;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 30px auto;
-            padding: 0 20px;
-        }
-        
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-        
-        .tab {
-            padding: 12px 24px;
-            background: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        
-        .tab.active {
-            background: #fc4a1a;
-            color: white;
-        }
-        
-        .tab:hover {
-            transform: translateY(-2px);
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        .card {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        
-        .card h3 {
-            color: #fc4a1a;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        
-        .stat-number {
-            font-size: 36px;
-            font-weight: 700;
-            color: #fc4a1a;
-            margin: 10px 0;
-        }
-        
-        .stat-label {
-            color: #666;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-        
-        th {
-            background: #fc4a1a;
-            color: white;
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-        }
-        
-        td {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        tr:hover {
-            background: #f9f9f9;
-        }
-        
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-        
-        .status-scheduled {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-        
-        .status-completed {
-            background: #e8f5e9;
-            color: #388e3c;
-        }
-        
-        .status-cancelled {
-            background: #ffebee;
-            color: #d32f2f;
-        }
-        
-        .status-no-show {
-            background: #fff3e0;
-            color: #f57c00;
-        }
-        
-        .status-paid {
-            background: #e8f5e9;
-            color: #388e3c;
-        }
-        
-        .status-pending {
-            background: #fff3e0;
-            color: #f57c00;
-        }
-        
-        .status-failed {
-            background: #ffebee;
-            color: #d32f2f;
-        }
-        
-        .search-box {
-            margin-bottom: 20px;
-        }
-        
-        .search-box input {
-            padding: 10px 15px;
-            width: 300px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        
-        .search-box input:focus {
-            outline: none;
-            border-color: #fc4a1a;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Dashboard</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',Tahoma,Helvetica,Arial,sans-serif;background:#f5f5f5}
+    .navbar{background:linear-gradient(135deg,#fc4a1a 0%,#f7b733 100%);color:#fff;padding:15px 30px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.1)}
+    .navbar h2{font-size:20px}
+    .logoutBtn{background:#fff;color:#fc4a1a;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:700}
+    .container{max-width:1400px;margin:28px auto;padding:0 20px}
+    .tabs{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+    .tab{padding:10px 18px;background:#fff;border-radius:6px;border:none;cursor:pointer;font-weight:700;transition:.18s}
+    .tab.active{background:#fc4a1a;color:#fff}
+    .tab:hover{transform:translateY(-3px)}
+    .tab-content{display:none}
+    .tab-content.active{display:block}
+    .card{background:#fff;padding:20px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:18px}
+    .card h3{color:#fc4a1a;margin-bottom:14px}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:20px}
+    .stat-card{background:#fff;padding:16px;border-radius:10px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+    .stat-number{font-size:28px;font-weight:800;color:#fc4a1a;margin-top:6px}
+    .search-box input{padding:10px 12px;width:320px;border:2px solid #e8e8e8;border-radius:6px;font-size:14px}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th{background:#fc4a1a;color:#fff;padding:12px;text-align:left;font-weight:700}
+    td{padding:12px;border-bottom:1px solid #f0f0f0}
+    tr:hover{background:#fafafa}
+    .status-badge{padding:6px 10px;border-radius:18px;font-size:12px;font-weight:700}
+    .micro-input{padding:8px 10px;border-radius:6px;border:1px solid #ddd;margin-right:8px}
+    .btn{padding:8px 12px;border-radius:6px;border:none;background:#fc4a1a;color:#fff;cursor:pointer;font-weight:700}
+    .btn.gray{background:#fff;color:#333;border:1px solid #ddd}
+    .btn.danger{background:#d32f2f}
+    .btn.danger:hover{background:#b71c1c;transform:none}
+    .flex{display:flex;gap:10px;align-items:center}
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+    .form-grid textarea{min-height:80px;resize:vertical}
+    .form-message{margin-top:10px;font-size:13px;display:none}
+    .form-message.success{color:#1b5e20;display:block}
+    .form-message.error{color:#c62828;display:block}
+    .actions-cell{min-width:110px}
+  </style>
 </head>
 <body>
-    <div class="navbar">
-        <h2>⚙️ Admin Dashboard</h2>
-        <div>
-            <span id="userName" style="margin-right: 20px;"></span>
-            <button id="logoutBtn">Logout</button>
-        </div>
+  <div class="navbar">
+    <h2>⚙️ Admin Dashboard</h2>
+    <div style="display:flex;align-items:center;gap:18px">
+      <span id="userName" style="color:#fff;font-weight:700"></span>
+      <button id="logoutBtn" class="logoutBtn">Logout</button>
     </div>
-    
-    <div class="container">
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">Total Patients</div>
-                <div class="stat-number" id="totalPatients">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Total Doctors</div>
-                <div class="stat-number" id="totalDoctors">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Total Appointments</div>
-                <div class="stat-number" id="totalAppointments">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Total Revenue</div>
-                <div class="stat-number" id="totalRevenue">₹0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Pending Payments</div>
-                <div class="stat-number" id="pendingPayments">₹0</div>
-            </div>
-        </div>
-        
-        <div class="tabs">
-            <button class="tab active" onclick="showTab('patients')">Patients</button>
-            <button class="tab" onclick="showTab('doctors')">Doctors</button>
-            <button class="tab" onclick="showTab('appointments')">Appointments</button>
-            <button class="tab" onclick="showTab('billings')">Billings</button>
-        </div>
-        
-        <!-- Patients Tab -->
-        <div id="patients" class="tab-content active">
-            <div class="card">
-                <h3>All Patients</h3>
-                <div class="search-box">
-                    <input type="text" id="searchPatients" placeholder="Search patients by name, ID, or email..." onkeyup="filterTable('patientsTable', this.value)">
-                </div>
-                <div style="overflow-x: auto;">
-                    <table id="patientsTable">
-                        <thead>
-                            <tr>
-                                <th>Patient ID</th>
-                                <th>Name</th>
-                                <th>Gender</th>
-                                <th>DOB</th>
-                                <th>Contact</th>
-                                <th>Email</th>
-                                <th>Address</th>
-                                <th>Insurance</th>
-                                <th>Registration Date</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Doctors Tab -->
-        <div id="doctors" class="tab-content">
-            <div class="card">
-                <h3>All Doctors</h3>
-                <div class="search-box">
-                    <input type="text" id="searchDoctors" placeholder="Search doctors by name, ID, or specialization..." onkeyup="filterTable('doctorsTable', this.value)">
-                </div>
-                <div style="overflow-x: auto;">
-                    <table id="doctorsTable">
-                        <thead>
-                            <tr>
-                                <th>Doctor ID</th>
-                                <th>Name</th>
-                                <th>Specialization</th>
-                                <th>Experience</th>
-                                <th>Phone</th>
-                                <th>Email</th>
-                                <th>Branch</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Appointments Tab -->
-        <div id="appointments" class="tab-content">
-            <div class="card">
-                <h3>All Appointments</h3>
-                <div class="search-box">
-                    <input type="text" id="searchAppointments" placeholder="Search appointments by ID, patient, or doctor..." onkeyup="filterTable('appointmentsTable', this.value)">
-                </div>
-                <div style="overflow-x: auto;">
-                    <table id="appointmentsTable">
-                        <thead>
-                            <tr>
-                                <th>Appointment ID</th>
-                                <th>Date</th>
-                                <th>Time</th>
-                                <th>Patient</th>
-                                <th>Doctor</th>
-                                <th>Reason</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Billings Tab -->
-        <div id="billings" class="tab-content">
-            <div class="card">
-                <h3>All Billings</h3>
-                <div class="search-box">
-                    <input type="text" id="searchBillings" placeholder="Search billings by ID, patient, or status..." onkeyup="filterTable('billingsTable', this.value)">
-                </div>
-                <div style="overflow-x: auto;">
-                    <table id="billingsTable">
-                        <thead>
-                            <tr>
-                                <th>Bill ID</th>
-                                <th>Patient Name</th>
-                                <th>Bill Date</th>
-                                <th>Amount</th>
-                                <th>Payment Method</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+  </div>
+
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Total Patients</div><div class="stat-number" id="totalPatients">0</div></div>
+      <div class="stat-card"><div class="stat-label">Total Doctors</div><div class="stat-number" id="totalDoctors">0</div></div>
+      <div class="stat-card"><div class="stat-label">Total Appointments</div><div class="stat-number" id="totalAppointments">0</div></div>
+      <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-number" id="totalRevenue">₹0</div></div>
+      <div class="stat-card"><div class="stat-label">Pending Payments</div><div class="stat-number" id="pendingPayments">₹0</div></div>
     </div>
 
-    <script>
-        document.getElementById("logoutBtn").addEventListener("click", function() {
-            // Clear any stored token
-            localStorage.removeItem("token");
-            localStorage.removeItem("role");
-            // Redirect to login page
-            window.location.href = "/login";
+    <div class="tabs">
+      <button class="tab active" onclick="showTab(event,'patients')">Patients</button>
+      <button class="tab" onclick="showTab(event,'doctors')">Doctors</button>
+      <button class="tab" onclick="showTab(event,'appointments')">Appointments</button>
+      <button class="tab" onclick="showTab(event,'billings')">Billings</button>
+    </div>
+
+    <!-- Patients -->
+    <div id="patients" class="tab-content active">
+      <div class="card">
+        <h3>Add New Patient</h3>
+        <form id="addPatientForm">
+          <div class="form-grid">
+            <div>
+              <label>First Name*</label>
+              <input type="text" id="patientFirstName" required>
+            </div>
+            <div>
+              <label>Last Name*</label>
+              <input type="text" id="patientLastName" required>
+            </div>
+            <div>
+              <label>Gender*</label>
+              <select id="patientGender" required>
+                <option value="">Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label>Date of Birth*</label>
+              <input type="date" id="patientDob" required>
+            </div>
+            <div>
+              <label>Contact Number</label>
+              <input type="text" id="patientContact" placeholder="+91 99999 99999">
+            </div>
+            <div>
+              <label>Email*</label>
+              <input type="email" id="patientEmail" required placeholder="patient@example.com">
+            </div>
+            <div>
+              <label>Insurance Provider</label>
+              <input type="text" id="patientInsuranceProvider" placeholder="Insurance Co">
+            </div>
+            <div>
+              <label>Insurance Number</label>
+              <input type="text" id="patientInsuranceNumber" placeholder="Policy #">
+            </div>
+            <div style="grid-column:1/-1">
+              <label>Address</label>
+              <textarea id="patientAddress" placeholder="Street, City, PIN"></textarea>
+            </div>
+          </div>
+          <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+            <button type="submit" class="btn">Save Patient</button>
+            <button type="reset" class="btn gray">Clear</button>
+          </div>
+        </form>
+        <div class="form-message" id="patientFormMessage"></div>
+      </div>
+
+      <div class="card">
+        <h3>All Patients</h3>
+        <div class="search-box" style="margin-bottom:12px">
+          <input type="text" id="searchPatients" placeholder="Search patients by name, ID, or email..." onkeyup="filterTable('patientsTable', this.value)">
+        </div>
+        <div style="overflow:auto">
+          <table id="patientsTable"><thead><tr>
+            <th>Patient ID</th><th>Name</th><th>Gender</th><th>DOB</th><th>Contact</th><th>Email</th><th>Address</th><th>Insurance</th><th>Registration</th><th>Actions</th>
+          </tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Doctors -->
+    <div id="doctors" class="tab-content">
+      <div class="card">
+        <h3>Add New Doctor</h3>
+        <form id="addDoctorForm">
+          <div class="form-grid">
+            <div>
+              <label>First Name*</label>
+              <input type="text" id="doctorFirstName" required>
+            </div>
+            <div>
+              <label>Last Name*</label>
+              <input type="text" id="doctorLastName" required>
+            </div>
+            <div>
+              <label>Specialization*</label>
+              <input type="text" id="doctorSpecialization" required placeholder="Cardiology">
+            </div>
+            <div>
+              <label>Years of Experience</label>
+              <input type="number" id="doctorExperience" min="0" placeholder="10">
+            </div>
+            <div>
+              <label>Phone Number*</label>
+              <input type="text" id="doctorPhone" required placeholder="+91 90000 00000">
+            </div>
+            <div>
+              <label>Email*</label>
+              <input type="email" id="doctorEmail" required placeholder="doctor@example.com">
+            </div>
+            <div>
+              <label>Hospital Branch</label>
+              <input type="text" id="doctorBranch" placeholder="Main Campus">
+            </div>
+          </div>
+          <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+            <button type="submit" class="btn">Save Doctor</button>
+            <button type="reset" class="btn gray">Clear</button>
+          </div>
+        </form>
+        <div class="form-message" id="doctorFormMessage"></div>
+      </div>
+
+      <div class="card">
+        <h3>All Doctors</h3>
+        <div class="search-box" style="margin-bottom:12px">
+          <input type="text" id="searchDoctors" placeholder="Search doctors by name, ID, or specialization..." onkeyup="filterTable('doctorsTable', this.value)">
+        </div>
+        <div style="overflow:auto">
+          <table id="doctorsTable"><thead><tr>
+            <th>Doctor ID</th><th>Name</th><th>Specialization</th><th>Experience</th><th>Phone</th><th>Email</th><th>Branch</th><th>Actions</th>
+          </tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Appointments -->
+    <div id="appointments" class="tab-content">
+      <div class="card">
+        <h3>All Appointments</h3>
+        <div class="search-box" style="margin-bottom:12px">
+          <input type="text" id="searchAppointments" placeholder="Search appointments by ID, patient, or doctor..." onkeyup="filterTable('appointmentsTable', this.value)">
+        </div>
+        <div style="overflow:auto">
+          <table id="appointmentsTable"><thead><tr>
+            <th>Appointment ID</th><th>Date</th><th>Time</th><th>Patient</th><th>Doctor</th><th>Reason</th><th>Status</th>
+          </tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Billings -->
+    <div id="billings" class="tab-content">
+      <div class="card">
+        <h3>All Billings</h3>
+        <div class="search-box" style="margin-bottom:12px">
+          <input type="text" id="searchBillings" placeholder="Search billings by ID, patient, or status..." onkeyup="filterTable('billingsTable', this.value)">
+        </div>
+        <div style="overflow:auto">
+          <table id="billingsTable"><thead><tr>
+            <th>Bill ID</th><th>Patient Name</th><th>Bill Date</th><th>Amount</th><th>Payment Method</th><th>Status</th>
+          </tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // --- config & auth ---
+    const API_ROOT = window.location.origin + '/api';
+    const token = localStorage.getItem('token');
+    const userName = localStorage.getItem('name') || '';
+    if (!token) { window.location.href = '/login'; }
+    document.getElementById('userName').textContent = userName;
+    const headers = {'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json'};
+
+    // logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('token'); localStorage.removeItem('role'); localStorage.removeItem('name');
+      window.location.href = '/login';
+    });
+
+    // Tab switching
+    function showTab(evt, tabName){
+      document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+      document.getElementById(tabName).classList.add('active');
+      if(evt && evt.currentTarget) evt.currentTarget.classList.add('active');
+    }
+
+    // Filter helper
+    function filterTable(tableId, searchText){
+      const table = document.getElementById(tableId);
+      if(!table) return;
+      const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+      const s = searchText.toLowerCase();
+      for (let row of rows) {
+        row.style.display = row.textContent.toLowerCase().includes(s) ? '' : 'none';
+      }
+    }
+
+    function setFormMessage(element, message = '', isError = false){
+      if(!element) return;
+      element.textContent = message || '';
+      element.classList.remove('error', 'success');
+      if(!message){
+        element.style.display = 'none';
+        return;
+      }
+      element.classList.add(isError ? 'error' : 'success');
+      element.style.display = 'block';
+    }
+
+    // --- Data loading functions (existing endpoints kept) ---
+    async function loadPatients(){
+      try {
+        const res = await fetch(`${API_ROOT}/admin/all-patients`, {headers});
+        const data = await res.json();
+        document.getElementById('totalPatients').textContent = data.length || 0;
+        const tbody = document.querySelector('#patientsTable tbody');
+        tbody.innerHTML = (data || []).map(p=>`
+          <tr>
+            <td>${p.patient_id||''}</td>
+            <td>${p.first_name||''} ${p.last_name||''}</td>
+            <td>${p.gender||''}</td>
+            <td>${p.date_of_birth||''}</td>
+            <td>${p.contact_number||''}</td>
+            <td>${p.email||''}</td>
+            <td>${p.address||''}</td>
+            <td>${p.insurance_provider||''}</td>
+            <td>${p.registration_date||''}</td>
+            <td class="actions-cell">
+              <button class="btn danger" onclick="deletePatient('${p.patient_id||''}')">Delete</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch(err){ console.error('loadPatients', err); }
+    }
+
+    async function loadDoctors(){
+      try {
+        const res = await fetch(`${API_ROOT}/admin/all-doctors`, {headers});
+        const data = await res.json();
+        document.getElementById('totalDoctors').textContent = data.length || 0;
+        const tbody = document.querySelector('#doctorsTable tbody');
+        tbody.innerHTML = (data || []).map(d=>`
+          <tr>
+            <td>${d.doctor_id||''}</td>
+            <td>Dr. ${d.first_name||''} ${d.last_name||''}</td>
+            <td>${d.specialization||''}</td>
+            <td>${d.years_experience ? d.years_experience + ' yrs' : ''}</td>
+            <td>${d.phone_number||''}</td>
+            <td>${d.email||''}</td>
+            <td>${d.hospital_branch||''}</td>
+            <td class="actions-cell">
+              <button class="btn danger" onclick="deleteDoctor('${d.doctor_id||''}')">Delete</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch(err){ console.error('loadDoctors', err); }
+    }
+
+    async function loadAppointments(){
+      try {
+        const res = await fetch(`${API_ROOT}/admin/all-appointments`, {headers});
+        const data = await res.json();
+        document.getElementById('totalAppointments').textContent = data.length || 0;
+        const tbody = document.querySelector('#appointmentsTable tbody');
+        tbody.innerHTML = (data || []).map(apt=>`
+          <tr>
+            <td>${apt.appointment_id||''}</td>
+            <td>${apt.appointment_date||''}</td>
+            <td>${apt.appointment_time||''}</td>
+            <td>${apt.patient_name||''} ${apt.patient_last||''}</td>
+            <td>Dr. ${apt.doctor_name||''} ${apt.doctor_last||''}</td>
+            <td>${apt.reason_for_visit||''}</td>
+            <td><span class="status-badge">${apt.status||''}</span></td>
+          </tr>
+        `).join('');
+      } catch(err){ console.error('loadAppointments', err); }
+    }
+
+    async function loadBillings(){
+      try {
+        const res = await fetch(`${API_ROOT}/admin/all-billings`, {headers});
+        const data = await res.json();
+        let totalRevenue=0, pending=0;
+        (data||[]).forEach(b=>{
+          if(b.payment_status==='Paid') totalRevenue += (b.amount||0);
+          else if(b.payment_status==='Pending') pending += (b.amount||0);
         });
-    </script>
+        document.getElementById('totalRevenue').textContent = `₹${(totalRevenue||0).toFixed(2)}`;
+        document.getElementById('pendingPayments').textContent = `₹${(pending||0).toFixed(2)}`;
+        const tbody = document.querySelector('#billingsTable tbody');
+        tbody.innerHTML = (data||[]).map(b=>`
+          <tr>
+            <td>${b.bill_id||''}</td>
+            <td>${b.first_name||''} ${b.last_name||''}</td>
+            <td>${b.bill_date||''}</td>
+            <td>₹${(b.amount||0).toFixed(2)}</td>
+            <td>${b.payment_method||''}</td>
+            <td><span class="status-badge">${b.payment_status||''}</span></td>
+          </tr>
+        `).join('');
+      } catch(err){ console.error('loadBillings', err); }
+    }
 
-    <script>
-        const API_URL = 'http://localhost:5000/api';
-        const token = localStorage.getItem('token');
-        const userName = localStorage.getItem('name');
-        
-        if (!token) {
-            window.location.href = 'login.html';
-        }
-        
-        document.getElementById('userName').textContent = userName;
-        
-        const headers = {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+    // --- Admin actions: add/delete patients & doctors ---
+    const patientForm = document.getElementById('addPatientForm');
+    const patientFormMessage = document.getElementById('patientFormMessage');
+    if(patientForm){
+      patientForm.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        setFormMessage(patientFormMessage, '');
+        const payload = {
+          first_name: (document.getElementById('patientFirstName').value || '').trim(),
+          last_name: (document.getElementById('patientLastName').value || '').trim(),
+          gender: document.getElementById('patientGender').value,
+          date_of_birth: document.getElementById('patientDob').value,
+          contact_number: (document.getElementById('patientContact').value || '').trim() || null,
+          email: (document.getElementById('patientEmail').value || '').trim(),
+          address: (document.getElementById('patientAddress').value || '').trim() || null,
+          insurance_provider: (document.getElementById('patientInsuranceProvider').value || '').trim() || null,
+          insurance_number: (document.getElementById('patientInsuranceNumber').value || '').trim() || null
         };
-        
-        function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.tab').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
+
+        if(!payload.email || !payload.date_of_birth || !payload.gender){
+          setFormMessage(patientFormMessage, 'Please complete all required fields.', true);
+          return;
         }
-        
-        function filterTable(tableId, searchText) {
-            const table = document.getElementById(tableId);
-            const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-            const search = searchText.toLowerCase();
-            
-            for (let row of rows) {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(search) ? '' : 'none';
-            }
+
+        const submitBtn = patientForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+
+        try{
+          const res = await fetch(`${API_ROOT}/admin/patients`, {
+            method:'POST',
+            headers,
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if(!res.ok){
+            throw new Error(data.error || data.message || 'Failed to add patient');
+          }
+          patientForm.reset();
+          setFormMessage(patientFormMessage, `Patient ${data.patient_id || ''} created successfully.`, false);
+          loadPatients();
+        }catch(err){
+          console.error('addPatient', err);
+          setFormMessage(patientFormMessage, err.message || 'Unable to add patient.', true);
+        }finally{
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
         }
-        
-        async function loadPatients() {
-            try {
-                const response = await fetch(`${API_URL}/admin/all-patients`, { headers });
-                const data = await response.json();
-                
-                document.getElementById('totalPatients').textContent = data.length;
-                
-                const tbody = document.querySelector('#patientsTable tbody');
-                tbody.innerHTML = data.map(p => `
-                    <tr>
-                        <td>${p.patient_id}</td>
-                        <td>${p.first_name} ${p.last_name}</td>
-                        <td>${p.gender}</td>
-                        <td>${p.date_of_birth}</td>
-                        <td>${p.contact_number}</td>
-                        <td>${p.email}</td>
-                        <td>${p.address}</td>
-                        <td>${p.insurance_provider}</td>
-                        <td>${p.registration_date}</td>
-                    </tr>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading patients:', error);
-            }
+      });
+    }
+
+    const doctorForm = document.getElementById('addDoctorForm');
+    const doctorFormMessage = document.getElementById('doctorFormMessage');
+    if(doctorForm){
+      doctorForm.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        setFormMessage(doctorFormMessage, '');
+        const yearsExperienceValue = (document.getElementById('doctorExperience').value || '').trim();
+        const payload = {
+          first_name: (document.getElementById('doctorFirstName').value || '').trim(),
+          last_name: (document.getElementById('doctorLastName').value || '').trim(),
+          specialization: (document.getElementById('doctorSpecialization').value || '').trim(),
+          years_experience: yearsExperienceValue || null,
+          phone_number: (document.getElementById('doctorPhone').value || '').trim(),
+          email: (document.getElementById('doctorEmail').value || '').trim(),
+          hospital_branch: (document.getElementById('doctorBranch').value || '').trim() || null
+        };
+
+        if(!payload.email || !payload.specialization || !payload.first_name || !payload.last_name || !payload.phone_number){
+          setFormMessage(doctorFormMessage, 'Please complete all required fields.', true);
+          return;
         }
-        
-        async function loadDoctors() {
-            try {
-                const response = await fetch(`${API_URL}/admin/all-doctors`, { headers });
-                const data = await response.json();
-                
-                document.getElementById('totalDoctors').textContent = data.length;
-                
-                const tbody = document.querySelector('#doctorsTable tbody');
-                tbody.innerHTML = data.map(d => `
-                    <tr>
-                        <td>${d.doctor_id}</td>
-                        <td>Dr. ${d.first_name} ${d.last_name}</td>
-                        <td>${d.specialization}</td>
-                        <td>${d.years_experience} years</td>
-                        <td>${d.phone_number}</td>
-                        <td>${d.email}</td>
-                        <td>${d.hospital_branch}</td>
-                    </tr>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading doctors:', error);
-            }
+
+        const submitBtn = doctorForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+
+        try{
+          const res = await fetch(`${API_ROOT}/admin/doctors`, {
+            method:'POST',
+            headers,
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if(!res.ok){
+            throw new Error(data.error || data.message || 'Failed to add doctor');
+          }
+          doctorForm.reset();
+          setFormMessage(doctorFormMessage, `Doctor ${data.doctor_id || ''} created successfully.`, false);
+          loadDoctors();
+        }catch(err){
+          console.error('addDoctor', err);
+          setFormMessage(doctorFormMessage, err.message || 'Unable to add doctor.', true);
+        }finally{
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
         }
-        
-        async function loadAppointments() {
-            try {
-                const response = await fetch(`${API_URL}/admin/all-appointments`, { headers });
-                const data = await response.json();
-                
-                document.getElementById('totalAppointments').textContent = data.length;
-                
-                const tbody = document.querySelector('#appointmentsTable tbody');
-                tbody.innerHTML = data.map(apt => `
-                    <tr>
-                        <td>${apt.appointment_id}</td>
-                        <td>${apt.appointment_date}</td>
-                        <td>${apt.appointment_time}</td>
-                        <td>${apt.patient_name} ${apt.patient_last}</td>
-                        <td>Dr. ${apt.doctor_name} ${apt.doctor_last}</td>
-                        <td>${apt.reason_for_visit}</td>
-                        <td><span class="status-badge status-${apt.status.toLowerCase().replace('-', '')}">${apt.status}</span></td>
-                    </tr>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading appointments:', error);
-            }
-        }
-        
-        async function loadBillings() {
-            try {
-                const response = await fetch(`${API_URL}/admin/all-billings`, { headers });
-                const data = await response.json();
-                
-                let totalRevenue = 0;
-                let pendingAmount = 0;
-                
-                data.forEach(bill => {
-                    if (bill.payment_status === 'Paid') {
-                        totalRevenue += bill.amount;
-                    } else if (bill.payment_status === 'Pending') {
-                        pendingAmount += bill.amount;
-                    }
-                });
-                
-                document.getElementById('totalRevenue').textContent = `₹${totalRevenue.toFixed(2)}`;
-                document.getElementById('pendingPayments').textContent = `₹${pendingAmount.toFixed(2)}`;
-                
-                const tbody = document.querySelector('#billingsTable tbody');
-                tbody.innerHTML = data.map(b => `
-                    <tr>
-                        <td>${b.bill_id}</td>
-                        <td>${b.first_name} ${b.last_name}</td>
-                        <td>${b.bill_date}</td>
-                        <td>₹${b.amount.toFixed(2)}</td>
-                        <td>${b.payment_method}</td>
-                        <td><span class="status-badge status-${b.payment_status.toLowerCase()}">${b.payment_status}</span></td>
-                    </tr>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading billings:', error);
-            }
-        }
-        
-        // Load all data
-        loadPatients();
-        loadDoctors();
-        loadAppointments();
-        loadBillings();
-    </script>
+      });
+    }
+
+    async function performDelete(url, successCallback){
+      const res = await fetch(url, {method:'DELETE', headers});
+      const data = await res.json();
+      if(!res.ok){
+        throw new Error(data.error || data.message || 'Delete failed');
+      }
+      if(typeof successCallback === 'function'){
+        successCallback(data);
+      }
+    }
+
+    window.deletePatient = async function(patientId){
+      if(!patientId) return;
+      if(!confirm(`Delete patient ${patientId}? This cannot be undone.`)) return;
+      try{
+        await performDelete(`${API_ROOT}/admin/patients/${patientId}`, ()=>loadPatients());
+        alert('Patient deleted successfully.');
+      }catch(err){
+        alert('Unable to delete patient: ' + (err.message || err));
+      }
+    };
+
+    window.deleteDoctor = async function(doctorId){
+      if(!doctorId) return;
+      if(!confirm(`Delete doctor ${doctorId}? This cannot be undone.`)) return;
+      try{
+        await performDelete(`${API_ROOT}/admin/doctors/${doctorId}`, ()=>loadDoctors());
+        alert('Doctor deleted successfully.');
+      }catch(err){
+        alert('Unable to delete doctor: ' + (err.message || err));
+      }
+    };
+
+    // On page load: populate data
+    loadPatients();
+    loadDoctors();
+    loadAppointments();
+    loadBillings();
+  </script>
 </body>
 </html>
