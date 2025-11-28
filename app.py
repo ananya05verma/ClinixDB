@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import mysql.connector
 from mysql.connector import Error
@@ -6,6 +6,7 @@ import jwt
 from datetime import datetime, timedelta
 from functools import wraps
 import hashlib
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -15,9 +16,21 @@ app.config['SECRET_KEY'] = 'e3c81b58bdd9a2d64fd511b3ed8a0868394c7d351e02c70fba9b
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': '#Ananya19',  # Change this
+    'password': '#Ananya19',  
     'database': 'hospital_management'
 }
+
+def generate_entity_id(cursor, table, column, prefix):
+    cursor.execute(f"SELECT {column} FROM {table} ORDER BY {column} DESC LIMIT 1")
+    last = cursor.fetchone()
+    if not last or not last.get(column):
+        return f"{prefix}001"
+    raw = str(last[column])
+    try:
+        numeric = int(raw[len(prefix):])
+    except (ValueError, TypeError):
+        numeric = 0
+    return f"{prefix}{numeric + 1:03d}"
 
 def get_db_connection():
     try:
@@ -26,6 +39,14 @@ def get_db_connection():
     except Error as e:
         print(f"Error: {e}")
         return None
+
+# Helper: convert mysql.connector.Error to JSON-friendly dict
+def db_error_to_response(e):
+    try:
+        err_msg = str(e)
+    except:
+        err_msg = "Database error"
+    return {'message': 'Database error', 'error': err_msg}
 
 # JWT Token Required Decorator
 def token_required(f):
@@ -50,68 +71,100 @@ def hash_password(password):
 
 # ==================== AUTHENTICATION ====================
 
+@app.route('/api/login/request-otp', methods=['POST'])
+def request_login_otp():
+    """
+    OTP/email-based login has been disabled for patients and doctors.
+    Admin login remains email + password via /api/login.
+    """
+    return jsonify({'message': 'OTP/email login disabled for patients and doctors. Use identifier (ID) login.'}), 400
+
 @app.route('/api/login', methods=['POST'])
 def login():
-    data = request.json
+    print("Login request received:", request.json)
+    data = request.json or {}
+    role = data.get('role')
     email = data.get('email')
     password = data.get('password', '')
-    role = data.get('role')
+    identifier = data.get('identifier')
 
-    # Validate required fields
-    if not email or not role:
-        return jsonify({'message': 'Missing email or role'}), 400
+    if not role:
+        return jsonify({'message': 'Missing role'}), 400
+
+    # Admin: unchanged (email + password)
+    if role == 'admin':
+        if email == 'admin@hospital.com' and password == 'admin123':
+            token = jwt.encode({
+                'user_id': 'ADMIN001',
+                'role': role,
+                'name': 'Administrator',
+                'exp': datetime.utcnow() + timedelta(hours=24)
+            }, app.config['SECRET_KEY'], algorithm="HS256")
+
+            return jsonify({
+                'token': token,
+                'user_id': 'ADMIN001',
+                'role': role,
+                'name': 'Administrator'
+            }), 200
+        return jsonify({'message': 'Invalid credentials'}), 401
+
+    # Only allow patient or doctor below
+    if role not in ('patient', 'doctor'):
+        return jsonify({'message': 'Invalid role'}), 400
+
+    # Enforce identifier-only login for patient/doctor
+    if not identifier or not isinstance(identifier, str) or not identifier.strip():
+        return jsonify({'message': 'Identifier (ID) is required for patient/doctor login'}), 400
+
+    normalized_identifier = identifier.strip()
 
     conn = get_db_connection()
+    if not conn:
+        return jsonify({'message': 'DB connection failed'}), 500
     cursor = conn.cursor(dictionary=True)
 
+    table = 'Patients' if role == 'patient' else 'Doctors'
+    id_column = 'patient_id' if role == 'patient' else 'doctor_id'
     user = None
-    user_id = None
-    name = None
 
+    try:
+        cursor.execute(
+            f"SELECT {id_column}, first_name, last_name FROM {table} WHERE {id_column} = %s",
+            (normalized_identifier,)
+        )
+        user = cursor.fetchone()
+    except Error as e:
+        return jsonify(db_error_to_response(e)), 500
+    finally:
+        try:
+            cursor.close()
+            conn.close()
+        except:
+            pass
+
+    if not user:
+        return jsonify({'message': 'Invalid identifier'}), 401
+
+    user_id = user[id_column]
     if role == 'patient':
-        # Patients don’t need password
-        cursor.execute("SELECT patient_id, email, first_name, last_name FROM Patients WHERE email = %s", (email,))
-        user = cursor.fetchone()
-        if user:
-            user_id = user['patient_id']
-            name = f"{user['first_name']} {user['last_name']}"
+        name = f"{user['first_name']} {user['last_name']}"
+    else:
+        name = f"Dr. {user['first_name']} {user['last_name']}"
 
-    elif role == 'doctor':
-        # Doctors don’t need password either
-        cursor.execute("SELECT doctor_id, email, first_name, last_name, specialization FROM Doctors WHERE email = %s", (email,))
-        user = cursor.fetchone()
-        if user:
-            user_id = user['doctor_id']
-            name = f"Dr. {user['first_name']} {user['last_name']}"
+    token = jwt.encode({
+        'user_id': user_id,
+        'role': role,
+        'name': name,
+        'exp': datetime.utcnow() + timedelta(hours=24)
+    }, app.config['SECRET_KEY'], algorithm="HS256")
 
-    elif role == 'admin':
-        # Admins require password
-        if email == 'admin@hospital.com' and password == 'admin123':
-            user = {'email': email}
-            user_id = 'ADMIN001'
-            name = 'Administrator'
-        else:
-            user = None
-
-    cursor.close()
-    conn.close()
-
-    if user:
-        token = jwt.encode({
-            'user_id': user_id,
-            'role': role,
-            'name': name,
-            'exp': datetime.utcnow() + timedelta(hours=24)
-        }, app.config['SECRET_KEY'], algorithm="HS256")
-
-        return jsonify({
-            'token': token,
-            'user_id': user_id,
-            'role': role,
-            'name': name
-        }), 200
-
-    return jsonify({'message': 'Invalid credentials'}), 401
+    return jsonify({
+        'token': token,
+        'user_id': user_id,
+        'role': role,
+        'name': name
+    }), 200
 
 # ==================== PATIENT ENDPOINTS ====================
 
@@ -149,6 +202,9 @@ def get_patient_appointments(current_user):
         return jsonify({'message': 'Unauthorized'}), 403
     
     conn = get_db_connection()
+    # small safety: if DB connection failed
+    if not conn:
+        return jsonify({'message': 'DB connection failed'}), 500
     cursor = conn.cursor(dictionary=True)
     
     cursor.execute("""
@@ -260,46 +316,90 @@ def get_available_doctors_by_slot(current_user):
     conn.close()
     return jsonify(doctors), 200
 
+# ==================== PATIENT: book_appointment ====================
+
 @app.route('/api/patient/book-appointment', methods=['POST'])
 @token_required
 def book_appointment(current_user):
-    if current_user['role'] != 'patient':
+    if current_user.get('role') != 'patient':
         return jsonify({'message': 'Unauthorized'}), 403
 
-    data = request.json
+    data = request.get_json(silent=True) or {}
     conn = get_db_connection()
+    if not conn:
+        return jsonify({'message': 'DB connection failed'}), 500
     cursor = conn.cursor()
 
-    # ✅ Check if doctor is already booked for that date & time
-    cursor.execute("""
-        SELECT * FROM Appointments
-        WHERE doctor_id = %s AND appointment_date = %s AND appointment_time = %s
-        AND status IN ('Scheduled', 'Ongoing')
-    """, (data['doctor_id'], data['date'], data['time']))
+    try:
+        # basic required fields
+        doctor_id = data.get('doctor_id')
+        date = data.get('date')
+        time = data.get('time')
+        reason_raw = (data.get('reason') or '').strip()
+        other_reason = (data.get('other_reason') or '').strip()
 
-    if cursor.fetchone():
-        cursor.close()
-        conn.close()
-        return jsonify({'message': 'Doctor not available at this time'}), 409
+        # If the frontend sent 'Other' selection but included text in other_reason,
+        # prefer the custom text. The frontend also sends final reason in `reason`,
+        # but this logic ensures we accept either.
+        final_reason = reason_raw
+        if reason_raw.lower() in ('other', '') and other_reason:
+            final_reason = other_reason
 
-    # Generate new appointment ID
-    cursor.execute("SELECT appointment_id FROM Appointments ORDER BY appointment_id DESC LIMIT 1")
-    last_id = cursor.fetchone()
-    new_id = f"A{int(last_id[0][1:]) + 1:03d}" if last_id else "A001"
+        if not doctor_id or not date or not time or not final_reason:
+            return jsonify({'message': 'Missing required fields'}), 400
 
-    cursor.execute("""
-        INSERT INTO Appointments (appointment_id, patient_id, doctor_id,
-                                  appointment_date, appointment_time,
-                                  reason_for_visit, status)
-        VALUES (%s, %s, %s, %s, %s, %s, 'Scheduled')
-    """, (new_id, current_user['user_id'], data['doctor_id'],
-          data['date'], data['time'], data['reason']))
+        # ✅ Check if doctor is already booked for that date & time
+        cursor.execute("""
+            SELECT COUNT(*) FROM Appointments
+            WHERE doctor_id = %s AND appointment_date = %s AND appointment_time = %s
+              AND status IN ('Scheduled','Ongoing')
+        """, (doctor_id, date, time))
+        clash_count = cursor.fetchone()[0]
+        if clash_count and clash_count > 0:
+            return jsonify({'message': 'Doctor already has an appointment at that time.'}), 400
 
-    conn.commit()
-    cursor.close()
-    conn.close()
+        # Generate new appointment_id similar to existing logic (preserve your style)
+        cursor.execute("SELECT appointment_id FROM Appointments ORDER BY appointment_id DESC LIMIT 1")
+        last_id = cursor.fetchone()
+        last_val = last_id[0] if last_id else None
+        try:
+            new_id = f"A{int(last_val[1:]) + 1:03d}" if last_val else "A001"
+        except Exception:
+            # fallback if the existing appointment_id format is unexpected
+            new_id = last_val and f"A{int(re.sub('[^0-9]', '', last_val)) + 1:03d}" or "A001"
 
-    return jsonify({'message': 'Appointment booked successfully', 'appointment_id': new_id}), 201
+        # Insert appointment using final_reason
+        cursor.execute("""
+            INSERT INTO Appointments (appointment_id, patient_id, doctor_id,
+                                      appointment_date, appointment_time,
+                                      reason_for_visit, status)
+            VALUES (%s, %s, %s, %s, %s, %s, 'Scheduled')
+        """, (new_id, current_user['user_id'], doctor_id, date, time, final_reason))
+
+        conn.commit()
+
+        return jsonify({'message': 'Appointment booked', 'appointment_id': new_id}), 200
+
+    except Error as e:
+        try:
+            conn.rollback()
+        except:
+            pass
+        return jsonify(db_error_to_response(e)), 400
+
+    except Exception as e:
+        try:
+            conn.rollback()
+        except:
+            pass
+        return jsonify({'message': 'Unexpected error', 'error': str(e)}), 500
+
+    finally:
+        try:
+            cursor.close()
+            conn.close()
+        except:
+            pass
 
 # ==================== DOCTOR ENDPOINTS ====================
 
@@ -323,6 +423,33 @@ def get_doctor_profile(current_user):
     conn.close()
     
     return jsonify(doctor), 200
+
+@app.route('/api/doctors/available', methods=['GET'])
+@token_required
+def get_available_doctors(current_user):
+    # Optional: allow access to all authenticated users (or only admins) --
+    # current_user is the decoded JWT from token_required.
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'message': 'DB connection failed'}), 500
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT doctor_id, first_name, last_name, specialization, 
+                   hospital_branch, years_experience
+            FROM Doctors
+            ORDER BY specialization, last_name
+        """)
+        doctors = cursor.fetchall()
+    except Error as e:
+        cursor.close()
+        conn.close()
+        return jsonify(db_error_to_response(e)), 400
+
+    cursor.close()
+    conn.close()
+    return jsonify(doctors), 200
 
 @app.route('/api/doctor/appointments', methods=['GET'])
 @token_required
@@ -357,92 +484,341 @@ def get_doctor_appointments(current_user):
     
     return jsonify(appointments), 200
 
+@app.route('/api/doctor/add-treatment', methods=['POST'])
+@token_required
+def doctor_add_treatment(current_user):
+    if current_user.get('role') != 'doctor':
+        return jsonify({'message': 'Unauthorized'}), 403
+
+    data = request.get_json(silent=True) or {}
+    appointment_id = (data.get('appointment_id') or '').strip()
+    treatment_type = (data.get('treatment_type') or '').strip()
+    description = (data.get('description') or '').strip()
+    cost = data.get('cost')
+
+    if not appointment_id or not treatment_type or not cost:
+        return jsonify({'message': 'Missing required fields'}), 400
+
+    try:
+        cost_val = float(cost)
+    except:
+        return jsonify({'message': 'Invalid cost value'}), 400
+
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'message': 'DB connection failed'}), 500
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # validate appointment belongs to doctor
+        cursor.execute("SELECT appointment_id, doctor_id, patient_id FROM Appointments WHERE appointment_id=%s",
+                       (appointment_id,))
+        apt = cursor.fetchone()
+        if not apt:
+            return jsonify({'message': 'Appointment not found'}), 404
+
+        if str(apt['doctor_id']) != str(current_user['user_id']):
+            return jsonify({'message': 'You are not authorized for this appointment'}), 403
+
+        patient_id = apt['patient_id']
+
+        # generate treatment id
+        treatment_id = generate_entity_id(cursor, "Treatments", "treatment_id", "T")
+        today = datetime.utcnow().strftime('%Y-%m-%d')
+
+        # insert treatment
+        cursor.execute("""
+            INSERT INTO Treatments (treatment_id, appointment_id, treatment_type, description, cost, treatment_date)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (treatment_id, appointment_id, treatment_type, description, cost_val, today))
+
+        # generate bill id
+        bill_id = generate_entity_id(cursor, "Billing", "bill_id", "B")
+
+        # insert billing (MATCHES YOUR TABLE)
+        cursor.execute("""
+            INSERT INTO Billing (bill_id, patient_id, treatment_id, bill_date, amount, payment_method, payment_status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (bill_id, patient_id, treatment_id, today, cost_val, "Not Paid", "Pending"))
+
+        conn.commit()
+
+        return jsonify({
+            "message": "Treatment & Billing created",
+            "treatment_id": treatment_id,
+            "bill_id": bill_id
+        }), 201
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify(db_error_to_response(e)), 400
+
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/api/doctor/billings', methods=['GET'])
+@token_required
+def get_doctor_billings(current_user):
+    # only doctors allowed
+    if current_user.get('role') != 'doctor':
+        return jsonify({'message': 'Unauthorized'}), 403
+
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'message': 'DB connection failed'}), 500
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # Join Billing -> Treatments -> Appointments -> Patients
+        # This returns appointment_id (from Appointments) even though Billing doesn't store appointment_id directly.
+        cursor.execute("""
+            SELECT
+                b.bill_id,
+                a.appointment_id,
+                p.patient_id,
+                p.first_name,
+                p.last_name,
+                t.treatment_type,
+                b.amount,
+                b.bill_date,
+                b.payment_method,
+                b.payment_status
+            FROM Billing b
+            JOIN Treatments t ON b.treatment_id = t.treatment_id
+            JOIN Appointments a ON t.appointment_id = a.appointment_id
+            JOIN Patients p ON a.patient_id = p.patient_id
+            WHERE a.doctor_id = %s
+            ORDER BY b.bill_date DESC, b.bill_id DESC
+        """, (current_user['user_id'],))
+
+        bills = cursor.fetchall()
+    except Error as e:
+        cursor.close()
+        conn.close()
+        return jsonify(db_error_to_response(e)), 400
+    finally:
+        try:
+            cursor.close()
+            conn.close()
+        except:
+            pass
+
+    # Normalize/shape response for frontend
+    for b in bills:
+        if b.get('bill_date') is not None:
+            b['bill_date'] = str(b['bill_date'])
+        try:
+            b['amount'] = float(b['amount']) if b.get('amount') is not None else 0.0
+        except:
+            pass
+        # add patient_name field expected by frontend
+        first = b.pop('first_name', '') or ''
+        last = b.pop('last_name', '') or ''
+        b['patient_name'] = f"{first} {last}".strip()
+
+    return jsonify(bills), 200
+
+@app.route('/api/doctor/billings/<bill_id>/status', methods=['PUT'])
+@token_required
+def update_billing_status(current_user, bill_id):
+    # Only doctors allowed
+    if current_user.get('role') != 'doctor':
+        return jsonify({'message': 'Unauthorized'}), 403
+
+    data = request.get_json(silent=True) or {}
+    new_status = data.get('payment_status')
+    payment_method = (data.get('payment_method') or '').strip() or 'Cash'
+    allowed_status = {'Completed', 'Paid', 'Pending', 'Cancelled', 'Not Paid'}
+    if not new_status or new_status not in allowed_status:
+        return jsonify({'message': 'Invalid billing status'}), 400
+
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'message': 'DB connection failed'}), 500
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # Verify the billing belongs to a treatment whose appointment is for this doctor
+        cursor.execute("""
+            SELECT b.bill_id, b.treatment_id, b.patient_id, b.amount, a.doctor_id
+            FROM Billing b
+            JOIN Treatments t ON b.treatment_id = t.treatment_id
+            JOIN Appointments a ON t.appointment_id = a.appointment_id
+            WHERE b.bill_id = %s
+        """, (bill_id,))
+        row = cursor.fetchone()
+        if not row:
+            cursor.close()
+            conn.close()
+            return jsonify({'message': 'Billing record not found'}), 404
+
+        if str(row.get('doctor_id')) != str(current_user.get('user_id')):
+            cursor.close()
+            conn.close()
+            return jsonify({'message': 'Unauthorized to modify this billing'}), 403
+
+        # Perform update
+        cursor.execute("""
+            UPDATE Billing
+            SET payment_status = %s, payment_method = %s
+            WHERE bill_id = %s
+        """, (new_status, payment_method, bill_id))
+
+        if cursor.rowcount == 0:
+            conn.rollback()
+            cursor.close()
+            conn.close()
+            return jsonify({'message': 'Failed to update billing'}), 400
+
+        conn.commit()
+
+        # Return updated billing entry (joined for context)
+        cursor.execute("""
+            SELECT b.bill_id, b.bill_date, b.amount, b.payment_method, b.payment_status,
+                   t.treatment_type, a.appointment_id, p.patient_id, p.first_name, p.last_name
+            FROM Billing b
+            JOIN Treatments t ON b.treatment_id = t.treatment_id
+            JOIN Appointments a ON t.appointment_id = a.appointment_id
+            JOIN Patients p ON a.patient_id = p.patient_id
+            WHERE b.bill_id = %s
+        """, (bill_id,))
+        updated = cursor.fetchone()
+    except Error as e:
+        try:
+            conn.rollback()
+        except:
+            pass
+        cursor.close()
+        conn.close()
+        return jsonify({'message': 'Database error', 'error': str(e)}), 400
+    except Exception as e:
+        try:
+            conn.rollback()
+        except:
+            pass
+        cursor.close()
+        conn.close()
+        return jsonify({'message': 'Unexpected error', 'error': str(e)}), 500
+
+    cursor.close()
+    conn.close()
+
+    # shape response
+    if updated:
+        if updated.get('bill_date') is not None:
+            updated['bill_date'] = str(updated['bill_date'])
+        try:
+            updated['amount'] = float(updated['amount']) if updated.get('amount') is not None else 0.0
+        except:
+            pass
+        first = updated.pop('first_name', '') or ''
+        last = updated.pop('last_name', '') or ''
+        updated['patient_name'] = f"{first} {last}".strip()
+
+    return jsonify({'message': 'Billing status updated', 'billing': updated}), 200
+
+# --- /api/doctor/update-appointment-status handler ---
+
+def db_error_to_response(exc: Exception) -> dict:
+    """Simple helper to convert DB exceptions to a JSON-friendly dict.
+    If your app already has a similar helper, you can remove this function.
+    """
+    try:
+        msg = str(exc)
+    except:
+        msg = "Database error"
+    return {"message": "Database error", "error": msg}
+
+
 @app.route('/api/doctor/update-appointment-status', methods=['PUT'])
 @token_required
 def update_appointment_status(current_user):
-    if current_user['role'] != 'doctor':
-        return jsonify({'message': 'Unauthorized'}), 403
-    
-    data = request.json
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("""
-        UPDATE Appointments 
-        SET status = %s 
-        WHERE appointment_id = %s AND doctor_id = %s
-    """, (data['status'], data['appointment_id'], current_user['user_id']))
-    
-    conn.commit()
-    cursor.close()
-    conn.close()
-    
-    return jsonify({'message': 'Appointment status updated'}), 200
-
-# ==================== DOCTOR ADDS TREATMENT ====================
-
-@app.route('/api/doctor/add-treatment', methods=['POST'])
-@token_required
-def add_treatment(current_user):
-    if current_user['role'] != 'doctor':
+    # Only doctors are allowed
+    if current_user.get('role') != 'doctor':
         return jsonify({'message': 'Unauthorized'}), 403
 
-    data = request.json
-    appointment_id = data.get('appointment_id')
-    treatment_type = data.get('treatment_type')
-    description = data.get('description')
-    cost = data.get('cost')
+    # Safely read JSON
+    data = request.get_json(silent=True) or {}
+    appointment_id = (data.get('appointment_id') or '').strip()
+    incoming_status = (data.get('status') or '').strip()
 
-    if not all([appointment_id, treatment_type, cost]):
-        return jsonify({'message': 'Missing required fields'}), 400
+    # Normalize & validate status
+    normalized_status = incoming_status.capitalize()
+    allowed_status = {'Scheduled', 'Completed', 'Cancelled', 'Ongoing'}
+
+    if not appointment_id or normalized_status not in allowed_status:
+        return jsonify({'message': 'Invalid appointment ID or status'}), 400
 
     conn = get_db_connection()
+    if not conn:
+        return jsonify({'message': 'DB connection failed'}), 500
+
     cursor = conn.cursor(dictionary=True)
 
-    # ✅ Check if appointment belongs to this doctor
-    cursor.execute("SELECT * FROM Appointments WHERE appointment_id=%s AND doctor_id=%s",
-                   (appointment_id, current_user['user_id']))
-    appointment = cursor.fetchone()
-    if not appointment:
-        cursor.close()
-        conn.close()
-        return jsonify({'message': 'Invalid appointment'}), 404
+    try:
+        # 1) Check appointment belongs to this doctor
+        cursor.execute("""
+            SELECT appointment_id, patient_id, doctor_id, status,
+                   appointment_date, appointment_time
+            FROM Appointments
+            WHERE appointment_id = %s AND doctor_id = %s
+        """, (appointment_id, current_user['user_id']))
+        appointment = cursor.fetchone()
 
-    # ✅ Create treatment ID
-    cursor.execute("SELECT treatment_id FROM Treatments ORDER BY treatment_id DESC LIMIT 1")
-    last = cursor.fetchone()
-    new_treatment_id = f"T{int(last['treatment_id'][1:]) + 1:03d}" if last else "T001"
+        if not appointment:
+            return jsonify({'message': 'Appointment not found'}), 404
 
-    # ✅ Insert treatment record
-    cursor.execute("""
-        INSERT INTO Treatments (treatment_id, appointment_id, treatment_type, description, cost, treatment_date)
-        VALUES (%s, %s, %s, %s, %s, CURDATE())
-    """, (new_treatment_id, appointment_id, treatment_type, description, cost))
-    conn.commit()
+        # Convert date/time so they’re JSON-safe
+        if appointment.get('appointment_date') is not None:
+            appointment['appointment_date'] = str(appointment['appointment_date'])
+        if appointment.get('appointment_time') is not None:
+            appointment['appointment_time'] = str(appointment['appointment_time'])
 
-    # ✅ Auto-generate billing record
-    cursor.execute("SELECT patient_id FROM Appointments WHERE appointment_id=%s", (appointment_id,))
-    patient = cursor.fetchone()
-    patient_id = patient['patient_id'] if patient else None
+        # Already same status?
+        if appointment['status'] == normalized_status:
+            return jsonify({
+                'message': f'Appointment already marked as {normalized_status.lower()}.',
+                'appointment': appointment
+            }), 200
 
-    cursor.execute("SELECT bill_id FROM Billing ORDER BY bill_id DESC LIMIT 1")
-    last_bill = cursor.fetchone()
-    new_bill_id = f"B{int(last_bill['bill_id'][1:]) + 1:03d}" if last_bill else "B001"
+        # 2) Update status
+        cursor.execute("""
+            UPDATE Appointments
+            SET status = %s
+            WHERE appointment_id = %s
+        """, (normalized_status, appointment_id))
 
-    cursor.execute("""
-        INSERT INTO Billing (bill_id, patient_id, treatment_id, bill_date, amount, payment_method, payment_status)
-        VALUES (%s, %s, %s, CURDATE(), %s, 'Pending', 'Pending')
-    """, (new_bill_id, patient_id, new_treatment_id, cost))
+        conn.commit()
 
-    conn.commit()
-    cursor.close()
-    conn.close()
+        # Update local copy to return
+        appointment['status'] = normalized_status
 
-    return jsonify({
-        'message': 'Treatment and billing record added successfully',
-        'treatment_id': new_treatment_id,
-        'bill_id': new_bill_id
-    }), 201
+        return jsonify({'message': 'Appointment status updated', 'appointment': appointment}), 200
+
+    except Error as e:
+        # This is where your "Database error" is coming from
+        try:
+            conn.rollback()
+        except:
+            pass
+        print("MySQL error in update_appointment_status:", e)  # <-- watch this in terminal
+        return jsonify(db_error_to_response(e)), 400
+
+    except Exception as e:
+        try:
+            conn.rollback()
+        except:
+            pass
+        print("Unexpected error in update_appointment_status:", e)
+        return jsonify({'message': 'Unexpected error', 'error': str(e)}), 500
+
+    finally:
+        try:
+            cursor.close()
+            conn.close()
+        except:
+            pass
 
 # ==================== ADMIN ENDPOINTS ====================
 
@@ -535,28 +911,6 @@ def get_all_billings(current_user):
     
     return jsonify(billings), 200
 
-# ==================== COMMON ENDPOINTS ====================
-
-@app.route('/api/doctors/available', methods=['GET'])
-@token_required
-def get_available_doctors(current_user):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    cursor.execute("""
-        SELECT doctor_id, first_name, last_name, specialization, 
-               hospital_branch, years_experience
-        FROM Doctors
-        ORDER BY specialization, last_name
-    """)
-    doctors = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    
-    return jsonify(doctors), 200
-
-from flask import render_template
-
 # ========== FRONTEND ROUTES ==========
 @app.route('/')
 def home():
@@ -583,4 +937,4 @@ def logout():
     return render_template('login.html')
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
