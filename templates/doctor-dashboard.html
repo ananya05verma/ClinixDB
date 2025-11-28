@@ -205,6 +205,15 @@
       background: #0069d9;
     }
 
+    .btn-pay {
+      background: #ff9800;
+      color: #fff;
+    }
+
+    .btn-pay:hover {
+      background: #fb8c00;
+    }
+
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -302,8 +311,9 @@
 
   <div class="container">
     <div class="tabs">
-      <button class="tab active" onclick="showTab('profile')">Profile</button>
-      <button class="tab" onclick="showTab('appointments')">My Appointments</button>
+      <button class="tab active" onclick="showTab('profile', event)">Profile</button>
+      <button class="tab" onclick="showTab('appointments', event)">My Appointments</button>
+      <button class="tab" onclick="showTab('billings', event)">Billings</button>
     </div>
 
     <!-- Profile Tab -->
@@ -356,6 +366,31 @@
         </div>
       </div>
     </div>
+
+    <!-- Billings Tab -->
+    <div id="billings" class="tab-content">
+      <div class="card">
+        <h3>Treatment Billings</h3>
+        <div style="overflow-x:auto;">
+          <table id="billingsTable">
+            <thead>
+              <tr>
+                <th>Bill ID</th>
+                <th>Appointment</th>
+                <th>Patient</th>
+                <th>Treatment</th>
+                <th>Amount</th>
+                <th>Bill Date</th>
+                <th>Payment Method</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Treatment Modal -->
@@ -390,7 +425,7 @@
       window.location.href = "/login";
     });
 
-    const API_URL = 'http://localhost:5000/api';
+    const API_URL = window.location.origin + '/api';
     const token = localStorage.getItem('token');
     const userName = localStorage.getItem('name');
     if (!token) window.location.href = 'login.html';
@@ -404,11 +439,13 @@
     let selectedAppointment = null;
 
     // ====== Tab Navigation ======
-    function showTab(tabName) {
+    function showTab(tabName, evt) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('active'));
       document.getElementById(tabName).classList.add('active');
-      event.target.classList.add('active');
+      if (evt && evt.currentTarget) {
+        evt.currentTarget.classList.add('active');
+      }
     }
 
     // ====== Load Profile ======
@@ -441,7 +478,22 @@
       document.getElementById('cancelledAppts').textContent = cancelled;
 
       const tbody = document.querySelector('#appointmentsTable tbody');
-      tbody.innerHTML = data.map(a => `
+      tbody.innerHTML = data.map(a => {
+        const normalizedStatus = a.status ? a.status.toLowerCase().replace(/[^a-z]/g, '') : '';
+        let actions = '-';
+        if (a.status === 'Scheduled') {
+          actions = `
+            <button class="action-btn btn-add-treatment" onclick="openTreatmentForm('${a.appointment_id}')">Add Treatment</button>
+            <button class="action-btn btn-complete" onclick="updateStatus('${a.appointment_id}', 'Completed')">Mark Completed</button>
+            <button class="action-btn btn-cancel" onclick="updateStatus('${a.appointment_id}', 'Cancelled')">Cancel</button>
+          `;
+        } else if (a.status === 'Ongoing') {
+          actions = `
+            <button class="action-btn btn-complete" onclick="updateStatus('${a.appointment_id}', 'Completed')">Mark Completed</button>
+            <button class="action-btn btn-cancel" onclick="updateStatus('${a.appointment_id}', 'Cancelled')">Cancel</button>
+          `;
+        }
+        return `
         <tr>
           <td>${a.appointment_id}</td>
           <td>${a.appointment_date}</td>
@@ -449,27 +501,34 @@
           <td>${a.patient_name}</td>
           <td>${a.contact_number}</td>
           <td>${a.reason_for_visit}</td>
-          <td><span class="status-badge status-${a.status.toLowerCase().replace('-', '')}">${a.status}</span></td>
-          <td>
-            ${a.status === 'Scheduled'
-              ? `<button class="action-btn btn-add-treatment" onclick="openTreatmentForm('${a.appointment_id}')">Add Treatment</button>
-                 <button class="action-btn btn-cancel" onclick="updateStatus('${a.appointment_id}', 'Cancelled')">Cancel</button>`
-              : '-'}
-          </td>
-        </tr>`).join('');
+          <td><span class="status-badge status-${normalizedStatus}">${a.status}</span></td>
+          <td>${actions}</td>
+        </tr>`;
+      }).join('');
     }
 
     // ====== Update Appointment Status ======
-    async function updateStatus(id, status) {
-      if (!confirm(`Mark this appointment as ${status}?`)) return;
-      const res = await fetch(`${API_URL}/doctor/update-appointment-status`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ appointment_id: id, status })
-      });
-      if (res.ok) loadAppointments();
-      else alert('Failed to update status');
+    window.updateStatus = async function(id, status) {
+    if (!confirm(`Mark this appointment as ${status}?`)) return;
+    const res = await fetch(`${API_URL}/doctor/update-appointment-status`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ appointment_id: id, status })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      await loadAppointments();
+      alert(data.message || `Appointment ${id} updated.`);
+    } else {
+      let data = {};
+      try {
+        data = await res.json();
+      } catch (e) {}
+      const msg = data.message || 'Failed to update status';
+      const details = data.error ? `\nDetails: ${data.error}` : '';
+      alert(msg + details);
     }
+  }
 
     // ====== Treatment Modal ======
     function openTreatmentForm(id) {
@@ -500,6 +559,7 @@
         document.getElementById('treatmentModal').style.display = 'none';
         e.target.reset();
         loadAppointments();
+        loadBillings();
       } else {
         alert(json.message || 'Error adding treatment');
       }
@@ -511,9 +571,67 @@
         document.getElementById('treatmentModal').style.display = 'none';
     };
 
+    async function loadBillings() {
+      const res = await fetch(`${API_URL}/doctor/billings`, { headers });
+      const data = await res.json();
+
+      const tbody = document.querySelector('#billingsTable tbody');
+      if (!Array.isArray(data) || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">No billing records yet.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.map(b => {
+        const statusClass = b.payment_status === 'Completed'
+          ? 'status-completed'
+          : (b.payment_status === 'Pending' ? 'status-scheduled' : 'status-no-show');
+        const sanitizedMethod = (b.payment_method || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        return `
+        <tr>
+          <td>${b.bill_id}</td>
+          <td>${b.appointment_id}</td>
+          <td>${b.patient_name} (${b.patient_id})</td>
+          <td>${b.treatment_type}</td>
+          <td>₹${Number(b.amount || 0).toFixed(2)}</td>
+          <td>${b.bill_date}</td>
+          <td>${b.payment_method || '-'}</td>
+          <td><span class="status-badge ${statusClass}">${b.payment_status}</span></td>
+          <td>
+            ${b.payment_status !== 'Completed'
+              ? `<button class="action-btn btn-pay" data-bill-id="${b.bill_id}" data-method="${sanitizedMethod}" onclick="markBillingPaid(event)">Mark Paid</button>`
+              : '-'}
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    window.markBillingPaid = async function (evt) {
+      const button = evt.currentTarget;
+      const billId = button.dataset.billId;
+      const currentMethod = button.dataset.method || 'Cash';
+      const method = prompt('Enter payment method used (e.g., Cash, Card, UPI):', currentMethod || 'Cash');
+      if (method === null || !billId) return;
+      try {
+        const res = await fetch(`${API_URL}/doctor/billings/${billId}/status`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ payment_status: 'Completed', payment_method: method.trim() || 'Cash' })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || 'Failed to update billing');
+        }
+        alert('Billing marked as Paid.');
+        loadBillings();
+      } catch (err) {
+        alert(err.message || 'Unable to update billing.');
+      }
+    };
+
     // ====== Initial Load ======
     loadProfile();
     loadAppointments();
+    loadBillings();
   </script>
 </body>
 </html>
