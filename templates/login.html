@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hospital Management - Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -12,25 +13,26 @@
     }
 
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(120deg, #f4ede1 0%, #f7f3eb 40%, #d9d7f1 100%);
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
+      color: #1e2749;
     }
 
     .login-container {
-      background: white;
+      background: #fffdfa;
       padding: 40px;
       border-radius: 10px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      box-shadow: 0 20px 60px rgba(30, 39, 73, 0.15);
       width: 100%;
       max-width: 400px;
     }
 
     h1 {
-      color: #667eea;
+      color: #1e2749;
       margin-bottom: 10px;
       text-align: center;
     }
@@ -55,68 +57,123 @@
     input, select {
       width: 100%;
       padding: 12px;
-      border: 2px solid #ddd;
-      border-radius: 5px;
+      border: 2px solid #e0d9c8;
+      border-radius: 8px;
       font-size: 14px;
-      transition: border-color 0.3s;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      background: #fff;
     }
 
     input:focus, select:focus {
       outline: none;
-      border-color: #667eea;
+      border-color: #1e2749;
+      box-shadow: 0 0 0 3px rgba(30, 39, 73, 0.15);
     }
 
     .btn {
       width: 100%;
       padding: 12px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(120deg, #1e2749, #2a3c72);
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 30px;
       font-size: 16px;
       font-weight: 600;
       cursor: pointer;
-      transition: transform 0.2s;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 10px 25px rgba(30, 39, 73, 0.25);
     }
 
     .btn:hover {
       transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(30, 39, 73, 0.3);
     }
 
-    .error-message {
-      background: #fee;
-      color: #c33;
-      padding: 10px;
-      border-radius: 5px;
+    .error-message, .success-message {
+      background: rgba(214, 65, 65, 0.08);
+      color: #a61212;
+      padding: 12px;
+      border-radius: 8px;
       margin-bottom: 20px;
+      display: none;
+      border: 1px solid rgba(166, 18, 18, 0.15);
+    }
+
+    .success-message {
+      background: rgba(46, 125, 50, 0.08);
+      color: #2e7d32;
+      border-color: rgba(46, 125, 50, 0.2);
       display: none;
     }
 
+    .radio-group {
+      display: flex;
+      gap: 15px;
+      font-size: 14px;
+      color: #1e2749;
+    }
+
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 0;
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: 20px;
+      border: 1px solid transparent;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .radio-group input:checked + span {
+      font-weight: 600;
+    }
+
+    .btn.secondary {
+      background: #f5f2ed;
+      color: #2a2a2a;
+      border: 1px solid #d9d0c2;
+      font-size: 14px;
+      border-radius: 24px;
+    }
+
+    .btn.secondary:hover {
+      transform: none;
+      background: #ebe4d7;
+    }
+
+    .otp-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+
     .info-box {
-      background: #e3f2fd;
+      background: #f7f3eb;
       padding: 15px;
-      border-radius: 5px;
+      border-radius: 12px;
       margin-top: 20px;
       font-size: 12px;
+      border: 1px solid #e6dece;
     }
 
     .info-box h4 {
-      color: #1976d2;
+      color: #2a3c72;
       margin-bottom: 10px;
     }
 
     .info-box p {
       margin: 5px 0;
-      color: #555;
+      color: #4a4a4a;
     }
   </style>
 </head>
 <body>
   <div class="login-container">
-    <h1>🏥 Hospital Management</h1>
+    <h1>🏥 ClinixDB</h1>
     <p class="subtitle">Secure Login Portal</p>
 
     <div class="error-message" id="errorMessage"></div>
+    <div class="success-message" id="successMessage"></div>
 
     <form id="loginForm">
       <div class="form-group">
@@ -129,12 +186,41 @@
         </select>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" id="emailGroup">
         <label for="email">Email Address</label>
-        <input type="email" id="email" placeholder="Enter your email" required />
+        <input type="email" id="email" placeholder="Enter your email" />
       </div>
 
-      <div class="form-group">
+      <!-- keep loginMethodGroup in DOM but hidden for patient/doctor (we'll hide it via JS) -->
+      <div class="form-group" id="loginMethodGroup" style="display: none;">
+        <label>Authentication Method</label>
+        <div class="radio-group">
+          <label>
+            <input type="radio" name="loginMethod" value="otp" checked />
+            Email OTP
+          </label>
+          <label>
+            <input type="radio" name="loginMethod" value="id" />
+            Use ID
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group otp-actions" id="otpActionRow" style="display: none;">
+        <button type="button" class="btn secondary" id="requestOtpBtn">Send OTP</button>
+      </div>
+
+      <div class="form-group" id="otpGroup" style="display: none;">
+        <label for="otp">One-Time Password</label>
+        <input type="text" id="otp" placeholder="Enter 6-digit OTP" maxlength="6" />
+      </div>
+
+      <div class="form-group" id="identifierGroup" style="display: none;">
+        <label for="identifier">Patient/Doctor ID</label>
+        <input type="text" id="identifier" placeholder="e.g., P001 or D010" />
+      </div>
+
+      <div class="form-group" id="passwordGroup">
         <label for="password">Password</label>
         <input type="password" id="password" placeholder="Enter your password (Admin only)" />
       </div>
@@ -145,42 +231,160 @@
     <div class="info-box">
       <h4>Demo Credentials:</h4>
       <p><strong>Admin:</strong> admin@hospital.com / admin123</p>
-      <p><strong>Doctor:</strong> Use any doctor email from DB (no password)</p>
-      <p><strong>Patient:</strong> Use any patient email from DB (no password)</p>
-      <p style="margin-top: 10px; font-style: italic;">Note: Password check disabled for demo (except admin)</p>
+      <p><strong>Doctor:</strong> Sign in using your Doctor ID (e.g., D001).</p>
+      <p><strong>Patient:</strong> Sign in using your Patient ID (e.g., P001).</p>
+      <p style="margin-top: 10px; font-style: italic;">Admin accounts still require email + password.</p>
     </div>
   </div>
 
   <script>
-    const API_URL = "http://localhost:5000/api";
+    const API_URL = window.location.origin + '/api';
+
+    const roleSelect = document.getElementById("role");
+    const emailGroup = document.getElementById("emailGroup");
+    const passwordGroup = document.getElementById("passwordGroup");
+    const loginMethodGroup = document.getElementById("loginMethodGroup");
+    const identifierGroup = document.getElementById("identifierGroup");
+    const otpGroup = document.getElementById("otpGroup");
+    const otpActionRow = document.getElementById("otpActionRow");
+    const requestOtpBtn = document.getElementById("requestOtpBtn");
+    const errorDiv = document.getElementById("errorMessage");
+    const successDiv = document.getElementById("successMessage");
+
+    function hideMessage(div) {
+      div.style.display = "none";
+      div.textContent = "";
+    }
+
+    function showMessage(div, text) {
+      div.textContent = text;
+      div.style.display = "block";
+    }
+
+    function getSelectedLoginMethod() {
+      const checked = document.querySelector('input[name="loginMethod"]:checked');
+      return checked ? checked.value : "id";
+    }
+
+    function updateVisibility() {
+      hideMessage(errorDiv);
+      hideMessage(successDiv);
+
+      const role = roleSelect.value;
+
+      if (role === "admin") {
+        // Admin: email + password
+        emailGroup.style.display = "block";
+        passwordGroup.style.display = "block";
+        loginMethodGroup.style.display = "none";
+        identifierGroup.style.display = "none";
+        otpGroup.style.display = "none";
+        otpActionRow.style.display = "none";
+      } else if (role === "patient" || role === "doctor") {
+        // Patient/Doctor: ONLY identifier (ID) login allowed
+        emailGroup.style.display = "none";
+        passwordGroup.style.display = "none";
+        loginMethodGroup.style.display = "none";
+        identifierGroup.style.display = "block";
+        otpGroup.style.display = "none";
+        otpActionRow.style.display = "none";
+      } else {
+        // default / nothing selected
+        emailGroup.style.display = "none";
+        passwordGroup.style.display = "none";
+        loginMethodGroup.style.display = "none";
+        identifierGroup.style.display = "none";
+        otpGroup.style.display = "none";
+        otpActionRow.style.display = "none";
+      }
+    }
+
+    roleSelect.addEventListener("change", updateVisibility);
+
+    // requestOtpBtn kept but hidden for patient/doctor; if admin or others try it, it will run (harmless)
+    requestOtpBtn.addEventListener("click", async () => {
+      hideMessage(errorDiv);
+      hideMessage(successDiv);
+      const role = roleSelect.value;
+      const email = document.getElementById("email").value.trim();
+
+      if (!role || (role !== "patient" && role !== "doctor")) {
+        showMessage(errorDiv, "OTP is not available. Use ID for Patient/Doctor login.");
+        return;
+      }
+
+      if (!email) {
+        showMessage(errorDiv, "Please enter your registered email to receive an OTP.");
+        return;
+      }
+
+      requestOtpBtn.disabled = true;
+      requestOtpBtn.textContent = "Sending...";
+
+      try {
+        const response = await fetch(`${API_URL}/login/request-otp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ role, email }),
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+          showMessage(successDiv, "OTP sent! Please check your email (valid for 5 minutes).");
+        } else {
+          showMessage(errorDiv, data.message || "Failed to send OTP.");
+        }
+      } catch (err) {
+        console.error(err);
+        showMessage(errorDiv, "Unable to contact server. Please try again.");
+      } finally {
+        requestOtpBtn.disabled = false;
+        requestOtpBtn.textContent = "Send OTP";
+      }
+    });
+
+    updateVisibility();
 
     document.getElementById("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
+      hideMessage(errorDiv);
+      hideMessage(successDiv);
+
+      const role = document.getElementById("role").value;
+      const identifier = document.getElementById("identifier").value.trim();
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value.trim();
-      const role = document.getElementById("role").value;
-      const errorDiv = document.getElementById("errorMessage");
 
-      errorDiv.style.display = "none";
-
-      if (!email || !role) {
-        errorDiv.textContent = "Please enter email and select role.";
-        errorDiv.style.display = "block";
+      if (!role) {
+        showMessage(errorDiv, "Please select a role.");
         return;
       }
 
-      if (role === "admin" && !password) {
-        errorDiv.textContent = "Admin password required!";
-        errorDiv.style.display = "block";
-        return;
+      const payload = { role };
+
+      if (role === "admin") {
+        if (!email || !password) {
+          showMessage(errorDiv, "Admin email and password are required.");
+          return;
+        }
+        payload.email = email;
+        payload.password = password;
+      } else {
+        // Patient/Doctor: identifier only
+        if (!identifier) {
+          showMessage(errorDiv, "Enter your Patient/Doctor ID to continue.");
+          return;
+        }
+        payload.identifier = identifier;
+        payload.login_method = "id";
       }
 
       try {
         const response = await fetch(`${API_URL}/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, role }),
+          body: JSON.stringify(payload),
         });
 
         const data = await response.json();
@@ -199,13 +403,11 @@
             window.location.href = "/patient-dashboard";
           }
         } else {
-          errorDiv.textContent = data.message || "Login failed.";
-          errorDiv.style.display = "block";
+          showMessage(errorDiv, data.message || "Login failed.");
         }
       } catch (error) {
         console.error("Error:", error);
-        errorDiv.textContent = "Server error. Please try again later.";
-        errorDiv.style.display = "block";
+        showMessage(errorDiv, "Server error. Please try again later.");
       }
     });
   </script>
